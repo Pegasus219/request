@@ -140,7 +140,12 @@ func (req *HttpRequest) Response() ([]byte, error) {
 		if httpAsyncPool == nil {
 			return nil, errors.New("async request pool not init")
 		}
-		httpAsyncPool <- req
+		select {
+		case httpAsyncPool <- req:
+			break
+		case <-time.After(req.timeout):
+			return nil, errors.New("async request timeout")
+		}
 		response := &HttpResponse{
 			Success: true,
 		}
